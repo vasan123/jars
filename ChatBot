@@ -2,7 +2,9 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
@@ -15,6 +17,8 @@ public class ChatBot extends JFrame {
 	//Chat Area:
 	private JTextArea txtChat = new JTextArea();
 	
+	private JButton btnOK = new JButton();
+	
 	public ChatBot() {
 		//Frame Attributes:
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -26,12 +30,16 @@ public class ChatBot extends JFrame {
 		
 		
 		//txtEnter Attributes:
-		txtEnter.setLocation(2, 540);
-		txtEnter.setSize(590, 30);
+		txtEnter.setLocation(15, 530);
+		txtEnter.setSize(530, 30);
 		
 		//txtEnter Action Event:
 		txtEnter.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent arg0) {
+				
+				
+				new Thread(new Runnable() {
+				      public void run() {
 				String uText = txtEnter.getText();
 				txtChat.append("You: " + uText + "\n");
 				
@@ -53,16 +61,16 @@ public class ChatBot extends JFrame {
 				}
 				else if(uText.contains("dev") || uText.contains("devlopment") ){
 					botSay("OK, Applying patches in DEV");
-					try {
-						Thread.sleep(1000);
+					//try {
+						//Thread.sleep(1000);
 						botSay("Patch Deployment is in progress");
-					} catch (InterruptedException e) {
+				//	} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					//	e.printStackTrace();
+				//	}
 					
 				}
-				else if(uText.contains("bye") ){
+				else if(uText.contains("close") ){
 					botSay("OK, Closing");
 					System.exit(0);
 					
@@ -81,17 +89,39 @@ public class ChatBot extends JFrame {
 				}
 				
 				txtEnter.setText("");
+				
+				      }
+			    }).start();
 			}
 		});
+		
+	   
+	       
 		
 		//txtChat Attributes:
 		txtChat.setLocation(15, 5);
 		txtChat.setSize(560, 510);
 		txtChat.setEditable(false);
 		
+		btnOK.setText("OK");
+		
+		btnOK.setLocation(540, 520);
+		btnOK.setSize(40, 50);
+		
+		//btnOK.setSize(30,40);
+		//btnOK.setLocation(570,550);
+		
+		btnOK.setVisible(true);
+		
+       
+        
 		//Add Items To Frame:
 		this.add(txtEnter);
 		this.add(txtChat);
+		
+		this.add(btnOK);
+		
+	
 		txtEnter.requestFocusInWindow();
 
 	}
