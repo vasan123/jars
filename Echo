@@ -1,0 +1,336 @@
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+
+import java.awt.BorderLayout;
+import javax.swing.JTextField;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.swing.JTextArea;
+import java.awt.Color;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.awt.event.ActionEvent;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.LineBorder;
+import java.awt.SystemColor;
+import javax.swing.border.MatteBorder;
+import javax.swing.text.DefaultCaret;
+
+import java.awt.Font;
+import java.awt.Window.Type;
+import java.awt.FlowLayout;
+import javax.swing.SwingConstants;
+import java.awt.Rectangle;
+import java.awt.Component;
+import java.awt.Dimension;
+import javax.swing.border.EtchedBorder;
+
+public class Echo {
+
+	private JFrame frmHowMayI;
+	private JTextField textField;
+
+	JTextArea textArea = new JTextArea();
+
+	String response;
+	private boolean IsnewValueProvided = false;
+	static Map<String, String> slots = new LinkedHashMap<>();
+	static List<String> bot = new ArrayList<String>();
+	static List<String> utterances = new ArrayList<String>();
+
+	private static final ExecutorService threadpool = Executors.newFixedThreadPool(1);
+	private JScrollPane scrollPane;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					Echo window = new Echo();
+					window.frmHowMayI.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the application.
+	 */
+	public Echo() {
+		initialize();
+		loadXmls();
+
+	}
+
+	public void botSay(String s) throws InterruptedException {
+
+		Validate val = new Validate();
+		Future future = threadpool.submit(val);
+
+		while (!future.isDone()) {
+			System.out.println("Validation task is in progress.");
+			Thread.sleep(1); // sleep for 1 millisecond before checking again
+
+		}
+
+		System.out.println("Validation is complete ");
+		// threadpool.shutdown();
+		textArea.setForeground(Color.BLUE);
+
+		slots.forEach((key, value) -> {
+			String tempKey = key;
+
+			textArea.append("Bot: " + (String) slots.get(key) + "\n");
+
+			textField.setText("");
+			response = "";
+
+			while ((response.length() <= 0) || (!validationHook(tempKey, response))) {
+
+				try {
+					Thread.sleep(1);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				// System.out.println("Waiting..");
+
+			}
+		});
+
+	}
+
+	public static void loadXmls() {
+		File file = new File("/Users/Mangai/Downloads/myProject/template.xml");
+
+		if (file.exists()) {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			try {
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				Document document = builder.parse(file);
+				Element documentElement = document.getDocumentElement();
+				NodeList sList = documentElement.getElementsByTagName("bot");
+				if (sList != null && sList.getLength() > 0) {
+					for (int i = 0; i < sList.getLength(); i++) {
+						Node node = sList.item(i);
+						if (node.getNodeType() == Node.ELEMENT_NODE) {
+							Element e = (Element) node;
+
+							NodeList utterancesList = e.getElementsByTagName("utterances");
+
+							if (utterancesList != null && utterancesList.getLength() > 0) {
+
+								for (int j = 0; j < utterancesList.getLength(); j++) {
+									try {
+										utterances.add(utterancesList.item(j).getChildNodes().item(0).getNodeValue());
+										System.out
+												.println(utterancesList.item(j).getChildNodes().item(0).getNodeValue());
+									} catch (Exception ex) {
+										System.out.println("exception occured" + e);
+									}
+									;
+								}
+
+							}
+
+							NodeList slotList = e.getElementsByTagName("slots");
+
+							if (slotList != null && slotList.getLength() > 0) {
+
+								for (int j = 0; j < slotList.getLength(); j++) {
+									try {
+										String key = slotList.item(j).getAttributes().getNamedItem("name")
+												.getNodeValue();
+										String value = slotList.item(j).getChildNodes().item(0).getNodeValue();
+										slots.put(key, value);
+
+									} catch (Exception ex) {
+										System.out.println("exception occured" + e);
+									}
+
+								}
+
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				System.out.println("exception occured" + e);
+			}
+		} else {
+			System.out.println("File not exists");
+		}
+
+	}
+
+	public boolean validationHook(String validationType, String validation) {
+		boolean success = false;
+		if (validationType.equalsIgnoreCase("environments")) {
+			if (match(validation, "*" + "dev" + "*")) {
+
+				// if (validation.equalsIgnoreCase("dev")) {
+				success = true;
+			} else {
+				if (IsnewValueProvided) {
+					textArea.append("Bot: " + "Please enter valid environment" + "\n");
+					IsnewValueProvided = false;
+
+				}
+			}
+		} else {
+			success = true;
+		}
+
+		return success;
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+		frmHowMayI = new JFrame();
+		frmHowMayI.setBackground(new Color(210, 105, 30));
+		frmHowMayI.getContentPane().setFont(new Font("Open Sans", Font.PLAIN, 14));
+		frmHowMayI.setResizable(false);
+		frmHowMayI.setType(Type.POPUP);
+		frmHowMayI.setForeground(new Color(0, 0, 255));
+		frmHowMayI.setFont(new Font("Open Sans", Font.PLAIN, 15));
+		frmHowMayI.setTitle("How May I Help you!!");
+		frmHowMayI.setBounds(100, 100, 731, 304);
+		frmHowMayI.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		JPanel panel = new JPanel();
+		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+		panel.setBorder(new CompoundBorder(new MatteBorder(2, 2, 2, 2, (Color) new Color(0, 0, 0)),
+				new LineBorder(new Color(0, 0, 0))));
+		panel.setBackground(SystemColor.textHighlight);
+		frmHowMayI.getContentPane().add(panel, BorderLayout.CENTER);
+		textArea.setBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(0, 0, 128), null));
+		textArea.setBackground(new Color(240, 248, 255));
+		textArea.setFont(new Font("Open Sans", Font.PLAIN, 15));
+
+		scrollPane = new JScrollPane(textArea);
+		panel.add(scrollPane);
+		textArea.setEditable(false);
+		DefaultCaret caret = (DefaultCaret)textArea.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
+
+
+		textArea.setRows(10);
+
+		textArea.setColumns(50);
+
+		textField = new JTextField();
+		textField.setBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(128, 0, 0), null));
+		textField.setSize(new Dimension(500, 100));
+		textField.setBounds(new Rectangle(0, 700, 0, 0));
+		textField.setColumns(50);
+		textField.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		textField.setHorizontalAlignment(SwingConstants.LEFT);
+		textField.setLocation(800, 530);
+		textField.setSize(530, 100);
+
+		panel.add(textField);
+	
+		textField.setFont(new Font("Open Sans", Font.PLAIN, 15));
+		textField.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+
+				new Thread(new Runnable() {
+					public void run() {
+						String uText = textField.getText();
+						response = uText;
+
+						// if(txtChat.getText().length() > 0)
+						// {
+						textArea.append("You: " + uText + "\n");
+						IsnewValueProvided = true;
+						// }
+						if (uText.contains("patch")) {
+							try {
+								botSay("patch");
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+						}
+						/*
+						 * else { int decider = (int) (Math.random() * 3 + 1);
+						 * if (decider == 1) { try { botSay("I didn't get that"
+						 * ); } catch (InterruptedException e) { // TODO
+						 * Auto-generated catch block e.printStackTrace(); } }
+						 * else if (decider == 2) { try { botSay(
+						 * "Please rephrase that"); } catch
+						 * (InterruptedException e) { // TODO Auto-generated
+						 * catch block e.printStackTrace(); } } else if (decider
+						 * == 3) { try { botSay("???"); } catch
+						 * (InterruptedException e) { // TODO Auto-generated
+						 * catch block e.printStackTrace(); } } }
+						 */
+						textField.setText("");
+
+					}
+				}).start();
+			}
+		});
+		textField.setBounds(800, 814, 750, 500);
+		textField.requestFocusInWindow();
+		textArea.setText("Bot: How I can help you? \n");
+	}
+
+	class Validate implements Callable {
+
+		public Validate() {
+			System.out.println("Waiting");
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("Complete");
+			// return true;
+		}
+
+		public Future submit(Validate val) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Object call() throws Exception {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+	}
+
+	public static boolean match(String text, String pattern) {
+		return text.matches(pattern.replace("?", ".?").replace("*", ".*?"));
+	}
+
+}
