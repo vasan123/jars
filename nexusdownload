@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# Original script in:
+# http://blog.sonatype.com/2011/01/downloading-artifacts-from-nexus-with-bash/#.VPW0c1PF_v9
+# Adapted for Nexus 3
+
+# Define Nexus Configuration
+NEXUS_BASE=http://repository.example.com:8081/nexus
+
+usage()
+{
+cat <<EOF
+usage: $0 options
+This script will fetch an artifact from a Nexus server using the Nexus REST redirect service.
+OPTIONS:
+   -h    Show this message
+   -a    GAV coordinate groupId:artifactId:version
+   -c    Artifact Classifier
+   -e    Artifact Packaging
+   -o    Output file
+   -r    Repository
+   -u    Username
+   -p    Password
+   -n    Nexus Base URL
+   -z    if nexus has newer version of artifact, remove Output File and exit
+EOF
+}
+
+# Read in Complete Set of Coordinates from the Command Line
+GROUP_ID=
+ARTIFACT_ID=
+VERSION=
+CLASSIFIER=""
+PACKAGING=jar
+REPO=
+USERNAME=
+PASSWORD=
+OUTPUT=
+
+while getopts "hvza:c:e:o:r:u:p:n:" OPTION
+do
+     case $OPTION in
+         h)
+             usage
+             exit 1
+             ;;
+         a)
+             OIFS=$IFS
+             IFS=":"
+             GAV_COORD=( $OPTARG )
+             GROUP_ID=${GAV_COORD[0]}
+             ARTIFACT_ID=${GAV_COORD[1]}
+             VERSION=${GAV_COORD[2]}
+             IFS=$OIFS
+             ;;
+         c)
+             CLASSIFIER=$OPTARG
+             ;;
+         e)
+             PACKAGING=$OPTARG
+             ;;
+         z)
+             SNAPSHOT_CHECK=1
+             ;;
+         o)
+             OUTPUT=$OPTARG
+             ;;
+         r)
+             REPO=$OPTARG
+             ;;
+         u)
+             USERNAME=$OPTARG
+             ;;
+         p)
+             PASSWORD=$OPTARG
+             ;;
+         n)
+             NEXUS_BASE=$OPTARG
+             ;;
+         ?)
+             echo "Illegal argument $OPTION=$OPTARG" >&2
+             usage
+             exit
+             ;;
+     esac
+done
+
+if [[ -z $GROUP_ID ]] || [[ -z $ARTIFACT_ID ]] || [[ -z $VERSION ]]
+then
+     echo "BAD ARGUMENTS: Either groupId, artifactId, or version was not supplied" >&2
+     usage
+     exit 1
+fi
+
+# Define default values for optional components
+
+# If we don't have set a repository and the version requested is a SNAPSHOT use snapshots, otherwise use releases
+if [[ "$REPO" == "" ]]
+then
+        if [[ "$VERSION" =~ .*SNAPSHOT ]]
+        then
+                : ${REPO:="snapshots"}
+        else
+                : ${REPO:="releases"}
+        fi
+fi
+# Construct the base URL
+GROUP_ID_PATH=$(echo $GROUP_ID | tr . /)
+BASE_URL=${NEXUS_BASE}/repository/${REPO}/${GROUP_ID_PATH}/${ARTIFACT_ID}/${VERSION}
+
+# Construct URL's "basename"
+if [[ "$VERSION" =~ .*SNAPSHOT ]]
+then
+    TIMESTAMPED_VERSION=$(curl -sS ${BASE_URL}/maven-metadata.xml | perl -ne 'if (m:<value>([^<]+)</value>:) { print $1; exit 0; }')
+    BASENAME="${ARTIFACT_ID}-${TIMESTAMPED_VERSION}${CLASSIFIER}.${PACKAGING}"
+else
+    BASENAME="${ARTIFACT_ID}-${VERSION}${CLASSIFIER}.${PACKAGING}"
+fi
+
+URL="${BASE_URL}/${BASENAME}"
+
+# Authentication
+AUTHENTICATION=
+if [[ "$USERNAME" != "" ]]  && [[ "$PASSWORD" != "" ]]
+then
+        AUTHENTICATION="-u $USERNAME:$PASSWORD"
+fi
+
+if [[ "$SNAPSHOT_CHECK" != "" ]]
+then
+  # remove $OUTPUT if nexus has newer version
+  if [[ -f $OUTPUT ]] && [[ "$(curl -s ${URL} ${AUTHENTICATION} -I --location-trusted -z $OUTPUT -o /dev/null -w '%{http_code}' )" == "200" ]]
+  then
+    echo "Nexus has newer version of $GROUP_ID:$ARTIFACT_ID:$VERSION"
+    rm $OUTPUT
+  fi
+  exit 0
+fi
+
+# Output
+OUT=
+if [[ "$OUTPUT" != "" ]]
+then
+        OUT="-o $OUTPUT"
+fi
+
+echo "Fetching Artifact from $REDIRECT_URL..." >&2
+curl -sS ${URL} ${OUT} ${AUTHENTICATION} -R --location-trusted --fail
