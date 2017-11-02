@@ -1,0 +1,41 @@
+def string = "PERF_DR:[050(C)| 052(C)|053(C)|049(W)]";
+def one =  string.tokenize(":[,]");
+
+println one
+def (v, z) =  string.split(':');
+
+//println v;
+//println z;
+def coreServers =  [ ]
+def wasServers =  [ ]
+
+def y =  z.tokenize(' [ ] |  ')  as LinkedList;
+//println y.class;
+
+def core ="";
+def was = "";
+//def list = ["A", "B", "C"]
+for (item in y) {
+   //println item
+    if (item.substring(0, item.lastIndexOf("(C)")))
+        coreServers.add(item.substring(0, item.lastIndexOf("(C)")));
+     else{
+    if (item.substring(0, item.lastIndexOf("(W)")))
+        wasServers.add(item.substring(0, item.lastIndexOf("(W)")));
+}
+     
+   // def w = was.substring(0, was.lastIndexOf("(W)"))
+
+//To get the part after the v:
+
+//input.substring(input.lastIndexOf(" v") + 2)
+
+//println w;
+    
+    println coreServers;
+println wasServers;
+}
+
+
+//println y
+
