@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<aiml>
+	<bot name = "patch">
+		<utterances>Can you deploy a patch?</utterances>
+		<utterances>Apply patch?</utterances>
+		<utterances>Deploy patch?</utterances>
+		<slots name="environments">Sure, Which environment you want to deploy?</slots>
+		<slots name="server">Which servers?</slots>
+		<slots name="confirm">Are you sure you want to deploy patches?</slots>
+	</bot>
+	<bot name = "service">
+		<utterances>Can you stop a service?</utterances>
+		<utterances>Stop service?</utterances>
+		<utterances>Bringdown service?</utterances>
+		<slots name="environments">Sure, Which environment you want to bringdown?</slots>
+		<slots name="server">Which servers?</slots>
+		<slots name="confirm">Are you sure you want to bring down the environment?</slots>
+	</bot>
+</aiml>
