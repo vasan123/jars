@@ -26,8 +26,13 @@ import org.w3c.dom.NodeList;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
+
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.awt.event.ActionEvent;
 import java.awt.Font;
+
 import javax.swing.border.LineBorder;
 import javax.swing.JButton;
 
@@ -52,7 +58,8 @@ public class Frame extends JFrame implements ActionListener {
 	private JScrollPane scrollPane;
 
 	private JTextPane textPane = new JTextPane();
-	Queue<String> processQueue = Collections.asLifoQueue(new ArrayDeque<String>());
+	Queue<String> processQueue = Collections
+			.asLifoQueue(new ArrayDeque<String>());
 
 	StyleContext context = new StyleContext();
 	StyledDocument document = new DefaultStyledDocument(context);
@@ -79,6 +86,7 @@ public class Frame extends JFrame implements ActionListener {
 	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					Frame frame = new Frame();
@@ -123,6 +131,7 @@ public class Frame extends JFrame implements ActionListener {
 
 		textField = new JTextField() {
 
+			@Override
 			public void addNotify() {
 				super.addNotify();
 				requestFocus();
@@ -146,9 +155,47 @@ public class Frame extends JFrame implements ActionListener {
 
 		scrollPane.setViewportView(textPane);
 
-		btnNewButton = new JButton("Speak");
+		btnNewButton = new JButton("Invoke");
 		btnNewButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
+			
+				
+				System.out.println("This is from the Button Event");
+				ShellExecuter invoke = new ShellExecuter();
+				List<?> t = invoke.executeFile("temp.sh");
+				try {
+					
+				
+                     
+					doc.insertString (doc.getLength(),t.toString(), right);
+					doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+				} catch (BadLocationException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				//System.out.println(t.toString());
+				
+				
+
+/*
+		              PrintStream toClient = null;
+					try{
+		                     Process p = Runtime.getRuntime().exec("ssh vkuppus@ssh.ilab.discoverfinancial.com");
+		                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		                     String buffer = null;
+		                     while ((buffer = stdInput.readLine())!= null) {
+		                           if(buffer.contains("COMPLETED_WITH_NULL_ECHO"))
+		                                  break;
+		                           System.out.println("Output: " + buffer);
+		                           toClient.println(buffer);
+		                     }
+		                     System.out.println("Server: Instruction Complete ");
+		              }catch(IOException e2){
+		                     System.out.println("Output: " + e2.getMessage());
+		             toClient.println(e2.getMessage()+"\n");
+		              }
+  */
 
 			}
 		});
@@ -158,7 +205,8 @@ public class Frame extends JFrame implements ActionListener {
 		if (decider == 1) {
 
 			try {
-				doc.insertString(doc.getLength(), botName + "May I Help you \n", right);
+				doc.insertString(doc.getLength(),
+						botName + "May I Help you \n", right);
 				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
 			} catch (BadLocationException e) {
 				// TODO Auto-generated catch block
@@ -166,7 +214,8 @@ public class Frame extends JFrame implements ActionListener {
 			}
 		} else if (decider == 2) {
 			try {
-				doc.insertString(doc.getLength(), botName + "Can I Help you \n", right);
+				doc.insertString(doc.getLength(),
+						botName + "Can I Help you \n", right);
 				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
 			} catch (BadLocationException e) {
 				// TODO Auto-generated catch block
@@ -174,7 +223,8 @@ public class Frame extends JFrame implements ActionListener {
 			}
 		} else if (decider == 3) {
 			try {
-				doc.insertString(doc.getLength(), botName + "What can I do for you \n", right);
+				doc.insertString(doc.getLength(), botName
+						+ "What can I do for you \n", right);
 				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
 			} catch (BadLocationException e) {
 				// TODO Auto-generated catch block
@@ -185,20 +235,31 @@ public class Frame extends JFrame implements ActionListener {
 
 	}
 
-	public void processFulfilement() throws InterruptedException {
-		Validate val = new Validate();
-		Future future = threadpool.submit(val);
+	public void processFulfilement(String uUid) throws InterruptedException {
+		System.out.println("In Process Fulfilment");
 
-		while (!future.isDone()) {
-			try {
-				doc.insertString(doc.getLength(), botName + "Your order has complete\n", right);
-			} catch (BadLocationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+
+				Validate val = new Validate(uUid);
+
+				Future future = threadpool.submit(val);
+
+				while (!future.isDone()) {
+					try {
+						doc.insertString(doc.getLength(), botName
+								+ "Your order " + uUid + " has complete\n",
+								right);
+					} catch (BadLocationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+
+				}
 			}
-			doc.setParagraphAttributes(doc.getLength(), 1, right, true);
-
-		}
+		}).start();
 	}
 
 	public void loadXmls(String tagName) {
@@ -211,10 +272,12 @@ public class Frame extends JFrame implements ActionListener {
 		utterances.removeAll(utterances);
 		System.out.println("utterances after :" + utterances.size());
 
-		File file = new File("/Downloads/myProject/template.xml");
+		File file = new File(
+				"C:\\Users\\Hello\\template\\template.xml");
 
 		if (file.exists()) {
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilderFactory factory = DocumentBuilderFactory
+					.newInstance();
 			try {
 
 				DocumentBuilder builder = factory.newDocumentBuilder();
@@ -223,8 +286,10 @@ public class Frame extends JFrame implements ActionListener {
 
 				XPathFactory xPathfactory = XPathFactory.newInstance();
 				XPath xpath = xPathfactory.newXPath();
-				XPathExpression expr = xpath.compile("//bot[@name=\"" + tagName + "\"]");
-				NodeList sList = (NodeList) expr.evaluate(document, XPathConstants.NODESET);
+				XPathExpression expr = xpath.compile("//bot[@name=\"" + tagName
+						+ "\"]");
+				NodeList sList = (NodeList) expr.evaluate(document,
+						XPathConstants.NODESET);
 
 				if (sList != null && sList.getLength() > 0) {
 					for (int i = 0; i < sList.getLength(); i++) {
@@ -232,17 +297,23 @@ public class Frame extends JFrame implements ActionListener {
 						if (node.getNodeType() == Node.ELEMENT_NODE) {
 							Element e = (Element) node;
 
-							NodeList utterancesList = e.getElementsByTagName("utterances");
+							NodeList utterancesList = e
+									.getElementsByTagName("utterances");
 
-							if (utterancesList != null && utterancesList.getLength() > 0) {
+							if (utterancesList != null
+									&& utterancesList.getLength() > 0) {
 
 								for (int j = 0; j < utterancesList.getLength(); j++) {
 									try {
-										utterances.add(utterancesList.item(j).getChildNodes().item(0).getNodeValue());
-										System.out
-												.println(utterancesList.item(j).getChildNodes().item(0).getNodeValue());
+										utterances.add(utterancesList.item(j)
+												.getChildNodes().item(0)
+												.getNodeValue());
+										System.out.println(utterancesList
+												.item(j).getChildNodes()
+												.item(0).getNodeValue());
 									} catch (Exception ex) {
-										System.out.println("exception occured" + e);
+										System.out.println("exception occured"
+												+ e);
 									}
 									;
 								}
@@ -255,13 +326,18 @@ public class Frame extends JFrame implements ActionListener {
 
 								for (int j = 0; j < slotList.getLength(); j++) {
 									try {
-										String key = slotList.item(j).getAttributes().getNamedItem("name")
+										String key = slotList.item(j)
+												.getAttributes()
+												.getNamedItem("name")
 												.getNodeValue();
-										String value = slotList.item(j).getChildNodes().item(0).getNodeValue();
+										String value = slotList.item(j)
+												.getChildNodes().item(0)
+												.getNodeValue();
 										slots.put(key, value);
 
 									} catch (Exception ex) {
-										System.out.println("exception occured" + e);
+										System.out.println("exception occured"
+												+ e);
 									}
 								}
 							}
@@ -290,8 +366,10 @@ public class Frame extends JFrame implements ActionListener {
 				if (IsReponseRecived) {
 					try {
 						StyledDocument doc = textPane.getStyledDocument();
-						doc.insertString(doc.getLength(), botName + "I did not get that \n", right);
-						doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+						doc.insertString(doc.getLength(), botName
+								+ "I did not get that \n", right);
+						doc.setParagraphAttributes(doc.getLength(), 1, right,
+								true);
 					} catch (BadLocationException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -313,8 +391,10 @@ public class Frame extends JFrame implements ActionListener {
 				if (IsReponseRecived) {
 					try {
 						StyledDocument doc = textPane.getStyledDocument();
-						doc.insertString(doc.getLength(), botName + "Please provide valid OTIS Server \n", right);
-						doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+						doc.insertString(doc.getLength(), botName
+								+ "Please provide valid OTIS Server \n", right);
+						doc.setParagraphAttributes(doc.getLength(), 1, right,
+								true);
 					} catch (BadLocationException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -346,32 +426,34 @@ public class Frame extends JFrame implements ActionListener {
 		return success;
 	}
 
-	class Validate implements Callable {
+	class Validate implements Callable<Object> {
 
-		public Validate() {			
+		public Validate(String uUid) {
 			StyledDocument doc = textPane.getStyledDocument();
 			try {
-				doc.insertString(doc.getLength(), botName + "Your order is in progress\n", right);
+				doc.insertString(doc.getLength(), botName + "Your order "
+						+ uUid + " is in progress\n", right);
 			} catch (BadLocationException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			doc.setParagraphAttributes(doc.getLength(), 1, right, true);
-			
+
 			try {
 
 				// Process your call here
-				Thread.sleep(10000);
+				Thread.sleep(20000);
+				//
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			//System.out.println("Complete");
-		
+			// System.out.println("Complete");
+
 			// return true;
 		}
 
-		public Future submit(Validate val) {
+		public Future<?> submit(Validate val) {
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -408,7 +490,8 @@ public class Frame extends JFrame implements ActionListener {
 				try {
 					StyledDocument doc = textPane.getStyledDocument();
 
-					doc.insertString(doc.getLength(), botName + slots.get(key) + " \n", left);
+					doc.insertString(doc.getLength(), botName + slots.get(key)
+							+ " \n", left);
 					doc.setParagraphAttributes(doc.getLength(), 1, left, false);
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
@@ -418,7 +501,8 @@ public class Frame extends JFrame implements ActionListener {
 				textField.setText("");
 				response = "";
 
-				while ((response.length() <= 0) || (!validationHook(tempKey, response))) {
+				while ((response.length() <= 0)
+						|| (!validationHook(tempKey, response))) {
 
 					try {
 						Thread.sleep(1);
@@ -436,7 +520,8 @@ public class Frame extends JFrame implements ActionListener {
 			try {
 				StyledDocument doc = textPane.getStyledDocument();
 
-				doc.insertString(doc.getLength(), botName + inputString + " \n", right);
+				doc.insertString(doc.getLength(),
+						botName + inputString + " \n", right);
 				doc.setParagraphAttributes(doc.getLength(), 1, right, false);
 			} catch (BadLocationException e) {
 				// TODO Auto-generated catch block
@@ -454,7 +539,8 @@ public class Frame extends JFrame implements ActionListener {
 		try {
 			StyledDocument doc = textPane.getStyledDocument();
 
-			doc.insertString(doc.getLength(), botName + orderStatus + " \n", right);
+			doc.insertString(doc.getLength(), botName + orderStatus + " \n",
+					right);
 			doc.setParagraphAttributes(doc.getLength(), 1, right, false);
 		} catch (BadLocationException e) {
 			// TODO Auto-generated catch block
@@ -462,10 +548,20 @@ public class Frame extends JFrame implements ActionListener {
 		}
 
 		System.out.println("This request process can begin here");
-
-		orderStatus = "";
 		
-		processFulfilement();
+		System.out.println("order"+ orderStatus);
+		
+		orderStatus = "";
+		new Thread(new Runnable() {
+			public void run() {
+
+				try {
+					processFulfilement(getSession());
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
 
 	}
 
@@ -474,6 +570,7 @@ public class Frame extends JFrame implements ActionListener {
 		return uuid;
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent e) {
 		new Thread(new Runnable() {
 			@Override
@@ -484,7 +581,8 @@ public class Frame extends JFrame implements ActionListener {
 				try {
 					StyledDocument doc = textPane.getStyledDocument();
 
-					doc.insertString(doc.getLength(), user + uText + " \n", left);
+					doc.insertString(doc.getLength(), user + uText + " \n",
+							left);
 					doc.setParagraphAttributes(doc.getLength(), 1, left, true);
 				} catch (BadLocationException e1) {
 					// TODO Auto-generated catch block
