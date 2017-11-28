@@ -35,7 +35,11 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +72,7 @@ public class Frame extends JFrame implements ActionListener {
 	SimpleAttributeSet left = new SimpleAttributeSet();
 	SimpleAttributeSet right = new SimpleAttributeSet();
 
-	String response;
+	String response = "";
 	private boolean progress = false;
 	private boolean IsReponseRecived = false;
 	String botName = "Bot :";
@@ -78,6 +82,15 @@ public class Frame extends JFrame implements ActionListener {
 	List<String> bot = new ArrayList<String>();
 	List<String> utterances = new ArrayList<String>();
 
+	
+	Hashtable<String, String> region = new Hashtable<String, String>();
+	Hashtable<String, Hashtable> environments = new Hashtable<String, Hashtable>();
+	
+	ArrayList<String> regionArray;
+	
+	ArrayList<String> envArray =  new ArrayList <String> ();
+	Enumeration eNames;
+	
 	private final ExecutorService threadpool = Executors.newFixedThreadPool(2);
 	private JButton btnNewButton;
 
@@ -91,6 +104,7 @@ public class Frame extends JFrame implements ActionListener {
 				try {
 					Frame frame = new Frame();
 					frame.setVisible(true);
+					
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -120,7 +134,7 @@ public class Frame extends JFrame implements ActionListener {
 		StyleConstants.setBold(left, true);
 		StyleConstants.setItalic(left, true);
 
-		StyleConstants.setAlignment(right, StyleConstants.ALIGN_LEFT);
+		StyleConstants.setAlignment(right, StyleConstants.ALIGN_RIGHT);
 		StyleConstants.setForeground(right, Color.BLUE);
 		StyleConstants.setFontSize(right, 12);
 		StyleConstants.setSpaceAbove(right, 2);
@@ -159,43 +173,19 @@ public class Frame extends JFrame implements ActionListener {
 		btnNewButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-			
-				
+
 				System.out.println("This is from the Button Event");
 				ShellExecuter invoke = new ShellExecuter();
 				List<?> t = invoke.executeFile("temp.sh");
 				try {
-					
-				
-                     
-					doc.insertString (doc.getLength(),t.toString(), right);
+
+					doc.insertString(doc.getLength(), t.toString(), right);
 					doc.setParagraphAttributes(doc.getLength(), 1, right, true);
 				} catch (BadLocationException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				//System.out.println(t.toString());
-				
-				
-
-/*
-		              PrintStream toClient = null;
-					try{
-		                     Process p = Runtime.getRuntime().exec("ssh vkuppus@ssh.ilab.discoverfinancial.com");
-		                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-		                     String buffer = null;
-		                     while ((buffer = stdInput.readLine())!= null) {
-		                           if(buffer.contains("COMPLETED_WITH_NULL_ECHO"))
-		                                  break;
-		                           System.out.println("Output: " + buffer);
-		                           toClient.println(buffer);
-		                     }
-		                     System.out.println("Server: Instruction Complete ");
-		              }catch(IOException e2){
-		                     System.out.println("Output: " + e2.getMessage());
-		             toClient.println(e2.getMessage()+"\n");
-		              }
-  */
+				// System.out.println(t.toString());
 
 			}
 		});
@@ -232,6 +222,7 @@ public class Frame extends JFrame implements ActionListener {
 			}
 
 		}
+		loadConfig();
 
 	}
 
@@ -262,6 +253,63 @@ public class Frame extends JFrame implements ActionListener {
 		}).start();
 	}
 
+	public void loadConfig()
+	{
+		
+		String parent = "";
+		File file = new File(
+				"C:\\Users\\vkuppus\\Hello\\template\\environments.xml");
+
+		if (file.exists()) {
+
+			DocumentBuilderFactory factory = DocumentBuilderFactory
+					.newInstance();
+			try {
+
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				Document document = builder.parse(file);
+				Element documentElement = document.getDocumentElement();
+				
+
+				NodeList keyElementList = document.getElementsByTagName("region");
+															
+				for (int temp = 0; temp < keyElementList.getLength(); temp++) {
+					Hashtable<String, String> region = new Hashtable<String, String>();
+			        Node nNode = keyElementList.item(temp);
+			        
+			        System.out.println("\nCurrent Element :" + nNode.getNodeName());
+			        
+			        if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+			
+			            Element eElement = (Element) nNode;
+			        
+			            parent = nNode.getAttributes().getNamedItem("name").getNodeValue();
+		
+					   	  					
+						for (int j = 0; j < eElement.getChildNodes().getLength(); j++) {
+							Node childNode = eElement.getChildNodes().item(j);
+							if (childNode.getNodeType() == Node.ELEMENT_NODE)
+
+								region.put(childNode.getNodeName(),
+										childNode.getTextContent().trim());
+			        
+						} 
+						
+			        }
+			        environments.put(parent, region);
+				}
+				
+				
+				}catch (Exception e) {
+				System.out.println("exception occured" + e);
+			}
+			
+		
+		} else {
+			System.out.println("File not exists");
+		}
+		
+	}
 	public void loadXmls(String tagName) {
 
 		System.out.println("slots beofre :" + slots.size());
@@ -273,7 +321,7 @@ public class Frame extends JFrame implements ActionListener {
 		System.out.println("utterances after :" + utterances.size());
 
 		File file = new File(
-				"C:\\Users\\Hello\\template\\template.xml");
+				"C:\\Users\\vkuppus\\Hello\\template\\template.xml");
 
 		if (file.exists()) {
 			DocumentBuilderFactory factory = DocumentBuilderFactory
@@ -354,27 +402,62 @@ public class Frame extends JFrame implements ActionListener {
 	}
 
 	public boolean validationHook(String validationType, String validation) {
+		String validationReponse = "";
 		boolean success = false;
 		switch (validationType) {
-		case "environments": {
+		case "region": {
 			// if (validationType.equalsIgnoreCase("environments")) {
-			if (match(validation, "*" + "dev" + "*")) {
+				
+
+			validationReponse = getIntentedServer(validation);
+			
+			if (!validationReponse.isEmpty()) {
 
 				// if (validation.equalsIgnoreCase("dev")) {
 				success = true;
 			} else {
 				if (IsReponseRecived) {
 					try {
-						StyledDocument doc = textPane.getStyledDocument();
-						doc.insertString(doc.getLength(), botName
-								+ "I did not get that \n", right);
-						doc.setParagraphAttributes(doc.getLength(), 1, right,
-								true);
-					} catch (BadLocationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+						int decider = (int) (Math.random() * 3 + 1);
+						if (decider == 1) {
 
+							try {
+								StyledDocument doc = textPane.getStyledDocument();
+								doc.insertString(doc.getLength(),
+										botName + "I did not get that \n", right);
+								doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+							} catch (BadLocationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else if (decider == 2) {
+							try {
+								StyledDocument doc = textPane.getStyledDocument();
+								doc.insertString(doc.getLength(),
+										botName + "Please provide valid region or server name \n", right);
+								doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+							} catch (BadLocationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else if (decider == 3) {
+							try {
+								StyledDocument doc = textPane.getStyledDocument();
+								doc.insertString(doc.getLength(), botName
+										+ "I am not quite understood \n", right);
+								doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+							} catch (BadLocationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+						}
+	
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+					
 					// textArea.append(botName + "Please enter valid
 					// environment" + "\n");
 					IsReponseRecived = false;
@@ -405,14 +488,14 @@ public class Frame extends JFrame implements ActionListener {
 		}
 			;
 			break;
-		case "confirmation": {
-			if (validationType.equalsIgnoreCase("no")) {
-				success = false;
+		case "confirm": {
+			if (validation.equalsIgnoreCase("no")) {
 				orderStatus = "cancelled";
 			}
+			success = true;
 		}
 		default: {
-			success = true;
+			//success = true;
 			break;
 		}
 		}
@@ -421,11 +504,61 @@ public class Frame extends JFrame implements ActionListener {
 			// System.out.println("This is the entered input " + validationType
 			// + " :" + validation);
 			String token = validationType + ":" + validation;
+			if(!validationReponse.isEmpty())
+				token = token + ":" + validationReponse;
 			orderStatus = orderStatus + "\n\t" + token;
 		}
 		return success;
 	}
 
+	public String getIntentedServer(String region)
+	{
+
+		String inputRecieved = "";
+		String intentedServer = "";
+		Enumeration envKey,serverKeys;
+		Hashtable serverParameters;
+		
+		envKey = environments.keys();
+		while (envKey.hasMoreElements()) {
+			String regionKey = (String) envKey.nextElement();
+			//if the region which we looking for is available then get the list of servers for that region.
+			if (regionKey.equalsIgnoreCase(region))
+			{
+			System.out.println("Main Hash " + regionKey);
+			serverParameters = (Hashtable) environments.get(regionKey);
+			serverKeys = serverParameters.keys();
+			while (serverKeys.hasMoreElements()) {
+
+				String serverKey = (String) serverKeys.nextElement();
+				String tmp = (String) serverParameters.get(serverKey);
+				
+				intentedServer = "Server : "+ intentedServer + "\n\t" + tmp;
+			}
+		}
+			else
+			{
+				//if the region which we looking for is Not available then get the list of servers for that region.
+				//Check if region is available and return the servers for that region
+				serverParameters = (Hashtable) environments.get(regionKey);
+				serverKeys = serverParameters.keys();
+				while (serverKeys.hasMoreElements()) {
+
+				String serverKey = (String) serverKeys.nextElement();
+								
+				if(region.equalsIgnoreCase((String) serverParameters.get(serverKey)))
+				{
+						intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
+				}
+			}
+			
+		}
+		
+	}
+				
+		return intentedServer;
+
+	}
 	class Validate implements Callable<Object> {
 
 		public Validate(String uUid) {
@@ -442,7 +575,7 @@ public class Frame extends JFrame implements ActionListener {
 			try {
 
 				// Process your call here
-				Thread.sleep(20000);
+				Thread.sleep(2000);
 				//
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -470,71 +603,74 @@ public class Frame extends JFrame implements ActionListener {
 		return text.matches(pattern.replace("?", ".?").replace("*", ".*?"));
 	}
 
-	public void botSay(String inputString) throws InterruptedException {
-		/*
-		 * Validate val = new Validate(); Future future =
-		 * threadpool.submit(val);
-		 * 
-		 * while (!future.isDone()) { // System.out.println(
-		 * "Validation task is in progress."); Thread.sleep(1); // sleep for 1
-		 * millisecond before checking again
-		 * 
-		 * }
-		 */
+	public void botSay(String inputString)
+			throws InterruptedException, BadLocationException {
+	
+		
+	
+			if (slots.size() > 0) {
+				slots.forEach((key, value) -> {
+					String tempKey = key;
 
-		if (slots.size() > 0) {
-			slots.forEach((key, value) -> {
-				String tempKey = key;
+					String inputReceived = scanInputs(inputString, tempKey);
+					
+					if (inputReceived.isEmpty()) {
+						// textArea.append(botName + slots.get(key) + "\n");
+						try {
+							StyledDocument doc = textPane.getStyledDocument();
 
-				// textArea.append(botName + slots.get(key) + "\n");
+												
+							doc.insertString(doc.getLength(), botName + slots.get(key)
+									+ " \n", left);
+							
+							doc.setParagraphAttributes(doc.getLength(), 1,
+									left, false);
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+
+						textField.setText("");
+						response = "";
+
+						while ((response.length() <= 0)
+								|| (!validationHook(tempKey, response))) {
+
+							try {
+								Thread.sleep(1);
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							// System.out.println("Waiting..");
+						}
+
+					}
+
+					else {
+						orderStatus = orderStatus + "\n\t" + inputReceived;
+						System.out
+								.println("We have slot input receieved skiping to next");
+					}
+				}
+
+				);
+				progress = false;
+			} else {
+				// textArea.append(botName+ inputString + "\n");
 				try {
 					StyledDocument doc = textPane.getStyledDocument();
 
-					doc.insertString(doc.getLength(), botName + slots.get(key)
-							+ " \n", left);
-					doc.setParagraphAttributes(doc.getLength(), 1, left, false);
-				} catch (Exception e1) {
+					doc.insertString(doc.getLength(), botName + inputString
+							+ " \n", right);
+					doc.setParagraphAttributes(doc.getLength(), 1, right, false);
+				} catch (BadLocationException e) {
 					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					e.printStackTrace();
 				}
-
-				textField.setText("");
-				response = "";
-
-				while ((response.length() <= 0)
-						|| (!validationHook(tempKey, response))) {
-
-					try {
-						Thread.sleep(1);
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-					// System.out.println("Waiting..");
-				}
-			});
-			progress = false;
-		} else {
-			// textArea.append(botName+ inputString + "\n");
-			try {
-				StyledDocument doc = textPane.getStyledDocument();
-
-				doc.insertString(doc.getLength(),
-						botName + inputString + " \n", right);
-				doc.setParagraphAttributes(doc.getLength(), 1, right, false);
-			} catch (BadLocationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
-
-		}
-		// Process fulfillment request here..
-		// Pattern pattern = Pattern.compile(Pattern.quote("|"));
-		// String[] orderConfirmation =
-		// Pattern.compile(Pattern.quote("|")).split(orderStatus);
-		// textArea.append("Bot:" + Arrays.toString(orderConfirmation));
-		// textArea.append(botName + orderStatus);
+	
 
 		try {
 			StyledDocument doc = textPane.getStyledDocument();
@@ -548,14 +684,15 @@ public class Frame extends JFrame implements ActionListener {
 		}
 
 		System.out.println("This request process can begin here");
-		
-		System.out.println("order"+ orderStatus);
-		
+
+		System.out.println("order" + orderStatus);
+
 		orderStatus = "";
 		new Thread(new Runnable() {
 			public void run() {
 
 				try {
+					if(!response.equalsIgnoreCase("no"))
 					processFulfilement(getSession());
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -565,13 +702,93 @@ public class Frame extends JFrame implements ActionListener {
 
 	}
 
+	public String scanInputs(String inputString, String keyword) {
+
+		String[] inputEntered = inputString.split("\\s+");
+		String inputRecieved = "";
+		String intentedServer = "";
+		Enumeration envKey,serverKeys;
+		Hashtable serverParameters;
+		String regionKey = "";
+		
+		if (keyword.equalsIgnoreCase("region")) {
+			for (int i = 0; i < inputEntered.length; i++) {
+				envKey = environments.keys();
+				while (envKey.hasMoreElements()) {
+					regionKey = (String) envKey.nextElement();
+					
+					System.out.println("Main Hash " + regionKey);
+					serverParameters = (Hashtable) environments.get(regionKey);
+					serverKeys = serverParameters.keys();
+					while (serverKeys.hasMoreElements()) {
+
+						String serverKey = (String) serverKeys.nextElement();
+						
+						if (inputEntered[i].equals(serverParameters.get(serverKey))) {
+							inputRecieved = inputEntered[i];
+							intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
+							break;
+					
+					}
+				}
+				
+			}
+		}
+		
+		if(intentedServer.isEmpty())
+		{
+
+			for (int i = 0; i < inputEntered.length; i++) {
+				envKey = environments.keys();
+				while (envKey.hasMoreElements()) {
+					regionKey = (String) envKey.nextElement();
+					
+					System.out.println("Main Hash " + regionKey);
+					
+					//Check if region is available and return the servers for that region
+						if (inputEntered[i].equals(regionKey)) {
+							inputRecieved = inputEntered[i];
+							
+							serverParameters = (Hashtable) environments.get(regionKey);
+							serverKeys = serverParameters.keys();
+							while (serverKeys.hasMoreElements()) {
+
+								String serverKey = (String) serverKeys.nextElement();
+							
+								intentedServer = intentedServer + "\n\t" + serverParameters.get(serverKey);
+								
+							//intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
+								}
+					
+						}
+				}
+		
+		
+			}
+		}
+		
+
+		}
+		return intentedServer;
+	}
+
 	public String getSession() {
 		String uuid = UUID.randomUUID().toString();
 		return uuid;
 	}
+	
+	public String[] setText(String unformatedOrderStatusString) {
+		String[] tempString = unformatedOrderStatusString.split("\\n+");
+		String [] tem = tempString.toString().split("\\:");
+		
+		return tempString;
+			
+	}
+	
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -595,23 +812,47 @@ public class Frame extends JFrame implements ActionListener {
 						progress = true;
 						loadXmls("service");
 						orderStatus = "\n\tOrder: Service Down";
-						botSay(uText);
+						try {
+							botSay(uText);
+						} catch (BadLocationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 
 				} else {
-					if (uText.contains("patch") && (!progress)) {
+
+					if ((uText.contains("patch") || uText.contains("apdm") || uText .contains("deploy")) && (!progress)) {
+						loadXmls("patch");
+						orderStatus = "\n\tOrder: Patch Deployment";
 						try {
 							progress = true;
-							loadXmls("patch");
-							orderStatus = "\n\tOrder: Patch Deployment";
-
 							botSay(uText);
+
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
+						} catch (BadLocationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+
+					} else {
+						if (uText.contains("patch") && (!progress)) {
+							try {
+								progress = true;
+								// loadXmls("patch");
+								// orderStatus = "\n\tOrder: Patch Deployment";
+
+								botSay(uText);
+							} catch (InterruptedException
+									| BadLocationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
 				}
@@ -619,6 +860,6 @@ public class Frame extends JFrame implements ActionListener {
 				textField.setText("");
 			}
 		}).start();
-	}
 
+	}
 }
