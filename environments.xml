@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<environments>
+	<region name = "dpl-dev1">
+		<be_server>rwxd284</be_server>
+		<fe_server>rwxd285</fe_server>
+	</region>
+	<region name = "dpl-dev2">
+		<be_server>rwxd200</be_server>
+		<fe_server>rwxd201</fe_server>
+	</region>
+</environments>
