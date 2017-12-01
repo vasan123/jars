@@ -86,10 +86,6 @@ public class Frame extends JFrame implements ActionListener {
 	Hashtable<String, String> region = new Hashtable<String, String>();
 	Hashtable<String, Hashtable> environments = new Hashtable<String, Hashtable>();
 	
-	ArrayList<String> regionArray;
-	
-	ArrayList<String> envArray =  new ArrayList <String> ();
-	Enumeration eNames;
 	
 	private final ExecutorService threadpool = Executors.newFixedThreadPool(2);
 	private JButton btnNewButton;
@@ -174,18 +170,7 @@ public class Frame extends JFrame implements ActionListener {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				System.out.println("This is from the Button Event");
-				ShellExecuter invoke = new ShellExecuter();
-				List<?> t = invoke.executeFile("temp.sh");
-				try {
-
-					doc.insertString(doc.getLength(), t.toString(), right);
-					doc.setParagraphAttributes(doc.getLength(), 1, right, true);
-				} catch (BadLocationException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				// System.out.println(t.toString());
+			System.out.println("Button Pressed");
 
 			}
 		});
@@ -239,14 +224,14 @@ public class Frame extends JFrame implements ActionListener {
 
 				while (!future.isDone()) {
 					try {
-						doc.insertString(doc.getLength(), botName
+						doc.insertString(doc.getLength(), "\n"+botName
 								+ "Your order " + uUid + " has complete\n",
-								right);
+								left);
 					} catch (BadLocationException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+					doc.setParagraphAttributes(doc.getLength(), 1, left, true);
 
 				}
 			}
@@ -258,7 +243,7 @@ public class Frame extends JFrame implements ActionListener {
 		
 		String parent = "";
 		File file = new File(
-				"C:\\Users\\vkuppus\\Hello\\template\\environments.xml");
+				"/Downloads/myProject/environments.xml");
 
 		if (file.exists()) {
 
@@ -321,7 +306,7 @@ public class Frame extends JFrame implements ActionListener {
 		System.out.println("utterances after :" + utterances.size());
 
 		File file = new File(
-				"C:\\Users\\vkuppus\\Hello\\template\\template.xml");
+				"/myProject/template.xml");
 
 		if (file.exists()) {
 			DocumentBuilderFactory factory = DocumentBuilderFactory
@@ -503,10 +488,11 @@ public class Frame extends JFrame implements ActionListener {
 
 			// System.out.println("This is the entered input " + validationType
 			// + " :" + validation);
-			String token = validationType + ":" + validation;
+		//	String token = validationType + ":" + validation;
+			
 			if(!validationReponse.isEmpty())
-				token = token + ":" + validationReponse;
-			orderStatus = orderStatus + "\n\t" + token;
+			//	token = token + ":" + validationReponse;
+			orderStatus = orderStatus + "\n\t" + validationReponse;
 		}
 		return success;
 	}
@@ -516,45 +502,57 @@ public class Frame extends JFrame implements ActionListener {
 
 		String inputRecieved = "";
 		String intentedServer = "";
-		Enumeration envKey,serverKeys;
-		Hashtable serverParameters;
+		Enumeration envKey,serverKeys,serverKeys1;
+		Hashtable serverParameters,serverParameters1;
 		
 		envKey = environments.keys();
 		while (envKey.hasMoreElements()) {
 			String regionKey = (String) envKey.nextElement();
-			//if the region which we looking for is available then get the list of servers for that region.
-			if (regionKey.equalsIgnoreCase(region))
-			{
-			System.out.println("Main Hash " + regionKey);
-			serverParameters = (Hashtable) environments.get(regionKey);
-			serverKeys = serverParameters.keys();
-			while (serverKeys.hasMoreElements()) {
+			// if the region which we looking for is available then get the list
+			// of servers for that region.
+			if (regionKey.equalsIgnoreCase(region)) {
 
-				String serverKey = (String) serverKeys.nextElement();
-				String tmp = (String) serverParameters.get(serverKey);
-				
-				intentedServer = "Server : "+ intentedServer + "\n\t" + tmp;
-			}
-		}
-			else
-			{
-				//if the region which we looking for is Not available then get the list of servers for that region.
-				//Check if region is available and return the servers for that region
+				intentedServer = "Region : " + regionKey + "\n\tServer :";
+
 				serverParameters = (Hashtable) environments.get(regionKey);
 				serverKeys = serverParameters.keys();
 				while (serverKeys.hasMoreElements()) {
 
-				String serverKey = (String) serverKeys.nextElement();
-								
-				if(region.equalsIgnoreCase((String) serverParameters.get(serverKey)))
-				{
-						intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
+					String serverKey = (String) serverKeys.nextElement();
+
+					intentedServer = intentedServer + "\n\t" + serverParameters.get(serverKey);
 				}
+
+			} else {
+
+				System.out.println("Main Hash " + regionKey);
+				serverParameters = (Hashtable) environments.get(regionKey);
+				serverKeys = serverParameters.keys();
+				while (serverKeys.hasMoreElements()) {
+
+					String serverKey = (String) serverKeys.nextElement();
+
+					if (region.equalsIgnoreCase((String) serverParameters.get(serverKey))) {
+
+						serverParameters1 = (Hashtable) environments.get(regionKey);
+						serverKeys1 = serverParameters1.keys();
+						while (serverKeys1.hasMoreElements()) {
+
+							String serverKey1 = (String) serverKeys1.nextElement();
+
+							intentedServer = intentedServer + "\n\t" + serverParameters1.get(serverKey1);
+
+						}
+						intentedServer = "Region : " + regionKey + "\n\tServer :" + intentedServer;
+						break;
+
+					}
+
+				}
+
 			}
-			
+
 		}
-		
-	}
 				
 		return intentedServer;
 
@@ -564,13 +562,13 @@ public class Frame extends JFrame implements ActionListener {
 		public Validate(String uUid) {
 			StyledDocument doc = textPane.getStyledDocument();
 			try {
-				doc.insertString(doc.getLength(), botName + "Your order "
-						+ uUid + " is in progress\n", right);
+				doc.insertString(doc.getLength(), "\n"+botName + "Your order "
+						+ uUid + " is in progress\n", left);
 			} catch (BadLocationException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+			doc.setParagraphAttributes(doc.getLength(), 1, left, true);
 
 			try {
 
@@ -707,37 +705,11 @@ public class Frame extends JFrame implements ActionListener {
 		String[] inputEntered = inputString.split("\\s+");
 		String inputRecieved = "";
 		String intentedServer = "";
-		Enumeration envKey,serverKeys;
-		Hashtable serverParameters;
+		Enumeration envKey,serverKeys,serverKeys1;
+		Hashtable serverParameters,serverParameters1;
 		String regionKey = "";
 		
 		if (keyword.equalsIgnoreCase("region")) {
-			for (int i = 0; i < inputEntered.length; i++) {
-				envKey = environments.keys();
-				while (envKey.hasMoreElements()) {
-					regionKey = (String) envKey.nextElement();
-					
-					System.out.println("Main Hash " + regionKey);
-					serverParameters = (Hashtable) environments.get(regionKey);
-					serverKeys = serverParameters.keys();
-					while (serverKeys.hasMoreElements()) {
-
-						String serverKey = (String) serverKeys.nextElement();
-						
-						if (inputEntered[i].equals(serverParameters.get(serverKey))) {
-							inputRecieved = inputEntered[i];
-							intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
-							break;
-					
-					}
-				}
-				
-			}
-		}
-		
-		if(intentedServer.isEmpty())
-		{
-
 			for (int i = 0; i < inputEntered.length; i++) {
 				envKey = environments.keys();
 				while (envKey.hasMoreElements()) {
@@ -748,7 +720,8 @@ public class Frame extends JFrame implements ActionListener {
 					//Check if region is available and return the servers for that region
 						if (inputEntered[i].equals(regionKey)) {
 							inputRecieved = inputEntered[i];
-							
+							intentedServer = "Region : "+ regionKey+"\n\tServer :";
+									
 							serverParameters = (Hashtable) environments.get(regionKey);
 							serverKeys = serverParameters.keys();
 							while (serverKeys.hasMoreElements()) {
@@ -756,17 +729,45 @@ public class Frame extends JFrame implements ActionListener {
 								String serverKey = (String) serverKeys.nextElement();
 							
 								intentedServer = intentedServer + "\n\t" + serverParameters.get(serverKey);
-								
-							//intentedServer = "Region : "+ regionKey+"\n\tServer :" + serverParameters.get(serverKey);
 								}
-					
+						}
+						else
+						{
+							
+							System.out.println("Main Hash " + regionKey);
+							serverParameters = (Hashtable) environments.get(regionKey);
+							serverKeys = serverParameters.keys();
+							while (serverKeys.hasMoreElements()) {
+
+								String serverKey = (String) serverKeys.nextElement();
+								
+								if (inputEntered[i].equals(serverParameters.get(serverKey))) {
+									
+									inputRecieved = inputEntered[i];
+	
+									serverParameters1 = (Hashtable) environments.get(regionKey);
+									serverKeys1 = serverParameters1.keys();
+									while (serverKeys1.hasMoreElements()) {
+
+										String serverKey1 = (String) serverKeys1.nextElement();
+									
+										intentedServer = intentedServer + "\n\t" + serverParameters1.get(serverKey1);
+										
+										}
+									intentedServer = "Region : "+ regionKey+"\n\tServer :" + intentedServer ;
+									break;
+							
+							}
+								
+
+						}
+							
+							
 						}
 				}
 		
 		
 			}
-		}
-		
 
 		}
 		return intentedServer;
