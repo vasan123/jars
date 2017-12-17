@@ -63,7 +63,7 @@ import java.awt.Font;
 import javax.swing.border.LineBorder;
 import javax.swing.JButton;
 
-public class Frame extends JFrame implements ActionListener {
+public class Voice extends JFrame implements ActionListener {
 
 	private JPanel contentPane;
 	private JTextField textField;
@@ -107,7 +107,7 @@ public class Frame extends JFrame implements ActionListener {
 			@Override
 			public void run() {
 				try {
-					Frame frame = new Frame();
+					Voice frame = new Voice();
 					frame.setVisible(true);
 					
 				} catch (Exception e) {
@@ -120,7 +120,7 @@ public class Frame extends JFrame implements ActionListener {
 	/**
 	 * Create the frame.
 	 */
-	public Frame() {
+	public Voice() {
 		setBackground(new Color(255, 255, 255));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 653, 304);
@@ -178,14 +178,12 @@ public class Frame extends JFrame implements ActionListener {
 		btnNewButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+			
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
 						
-						if (toggle)
-							toggle = false;
-						if (!toggle)
-							toggle = true;
+					
 						
 						initiateVoiceCall();
 					}
@@ -233,9 +231,13 @@ public class Frame extends JFrame implements ActionListener {
 	public void initiateVoiceCall()
 	{
 		System.out.println("Toggle is enter " + toggle);
-		
+		if (toggle)
+			toggle = false;
+		else
+			toggle = true;
 		
 		while (toggle) {
+			System.out.println("Toggle is enter " + toggle);
 
 			try {
 				Thread.sleep(1);
@@ -254,9 +256,9 @@ public class Frame extends JFrame implements ActionListener {
         // Set path to the acoustic model.
         configuration.setAcousticModelPath("resource:/edu/cmu/sphinx/models/en-us/en-us");
         // Set path to the dictionary.
-        configuration.setDictionaryPath("/Users/Downloads/myProject/8791.dic");
+        configuration.setDictionaryPath("/Users//Downloads/myProject/2008.dic");
         // Set path to the language model.
-        configuration.setLanguageModelPath("/Users/Downloads/myProject/8791.lm");
+        configuration.setLanguageModelPath("/Users//Downloads/myProject/2008.lm");
  
         //Recognizer object, Pass the Configuration object
         LiveSpeechRecognizer recognize;
@@ -296,37 +298,51 @@ public class Frame extends JFrame implements ActionListener {
 
 			IsReponseRecived = true;
 			if (uText.contains("service") && (!progress)) {
-				try {
 					progress = true;
 					loadXmls("service");
 					orderStatus = "\n\tOrder: Service Down";
-					try {
-						botSay(uText);
-					} catch (BadLocationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							progress = true;
+							try {
+								botSay(uText);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (BadLocationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+					}).start();
+				
 
 			} else {
 
 				if ((uText.contains("patch") || uText.contains("apdm") || uText .contains("deploy")) && (!progress)) {
 					loadXmls("patch");
 					orderStatus = "\n\tOrder: Patch Deployment";
-					try {
-						progress = true;
-						botSay(uText);
-
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (BadLocationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+						
+						new Thread(new Runnable() {
+							@Override
+							public void run() {
+								progress = true;
+								try {
+									botSay(uText);
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (BadLocationException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+						}).start();
+						
+						
+				
+				
 
 				} else {
 					if (uText.contains("patch") && (!progress)) {
@@ -390,7 +406,7 @@ public class Frame extends JFrame implements ActionListener {
 		
 		String parent = "";
 		File file = new File(
-				"/Users/Downloads/myProject/environments.xml");
+				"/Users/Mangai/Downloads/myProject/environments.xml");
 
 		if (file.exists()) {
 
@@ -453,7 +469,7 @@ public class Frame extends JFrame implements ActionListener {
 		System.out.println("utterances after :" + utterances.size());
 
 		File file = new File(
-				"/Users/Downloads/myProject/template.xml");
+				"/Users//Downloads/myProject/template.xml");
 
 		if (file.exists()) {
 			DocumentBuilderFactory factory = DocumentBuilderFactory
@@ -672,7 +688,7 @@ public class Frame extends JFrame implements ActionListener {
 
 			} else {
 
-				System.out.println("Main Hash " + regionKey);
+				//System.out.println("Main Hash " + regionKey);
 				serverParameters = (Hashtable) environments.get(regionKey);
 				serverKeys = serverParameters.keys();
 				while (serverKeys.hasMoreElements()) {
