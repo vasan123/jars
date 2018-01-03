@@ -1,0 +1,406 @@
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import edu.cmu.sphinx.api.Configuration;
+import edu.cmu.sphinx.api.LiveSpeechRecognizer;
+import edu.cmu.sphinx.api.SpeechResult;
+
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.JScrollPane;
+import edu.cmu.sphinx.api.Configuration;
+import edu.cmu.sphinx.api.LiveSpeechRecognizer;
+import edu.cmu.sphinx.api.SpeechResult;
+import java.io.IOException;
+
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.awt.event.ActionEvent;
+import java.awt.Font;
+
+import javax.swing.border.LineBorder;
+import javax.swing.JButton;
+
+public class TestJava extends JFrame implements ActionListener, WindowFocusListener {
+
+	private JPanel contentPane;
+	private JTextField textField;
+	private JScrollPane scrollPane;
+	private boolean isActive = true;
+
+	private JTextPane textPane = new JTextPane();
+	Queue<String> processQueue = Collections
+			.asLifoQueue(new ArrayDeque<String>());
+
+	StyleContext context = new StyleContext();
+	StyledDocument document = new DefaultStyledDocument(context);
+
+	StyledDocument doc = textPane.getStyledDocument();
+	SimpleAttributeSet left = new SimpleAttributeSet();
+	SimpleAttributeSet right = new SimpleAttributeSet();
+
+	String response = "";
+	//private boolean progress = false;
+	//private boolean IsReponseRecived = false;
+	String botName = "Bot :";
+	String user = "Vasan :";
+	String orderStatus = "";
+	private static boolean  toggle = false;
+	Map<String, String> slots = new LinkedHashMap<>();
+	List<String> bot = new ArrayList<String>();
+	List<String> utterances = new ArrayList<String>();
+
+	
+	Hashtable<String, String> region = new Hashtable<String, String>();
+	Hashtable<String, Hashtable> environments = new Hashtable<String, Hashtable>();
+	
+	
+	private final ExecutorService threadpool = Executors.newFixedThreadPool(2);
+	private JButton btnNewButton;
+	private JButton btnNewButton1;
+
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					TestJava frame = new TestJava();
+					frame.setVisible(true);
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public TestJava() {
+		setBackground(new Color(255, 255, 255));
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 653, 304);
+		contentPane = new JPanel();
+		contentPane.setForeground(new Color(0, 0, 0));
+		contentPane.setBorder(new LineBorder(new Color(0, 0, 139), 2));
+		contentPane.setLayout(new BorderLayout(0, 0));
+		setContentPane(contentPane);
+
+		StyleConstants.setAlignment(left, StyleConstants.ALIGN_LEFT);
+		StyleConstants.setForeground(left, Color.RED);
+		StyleConstants.setFontSize(left, 12);
+		StyleConstants.setSpaceAbove(left, 2);
+		StyleConstants.setSpaceBelow(left, 2);
+		StyleConstants.setLeftIndent(left, 8);
+		StyleConstants.setBold(left, true);
+		StyleConstants.setItalic(left, true);
+
+		StyleConstants.setAlignment(right, StyleConstants.ALIGN_RIGHT);
+		StyleConstants.setForeground(right, Color.BLUE);
+		StyleConstants.setFontSize(right, 12);
+		StyleConstants.setSpaceAbove(right, 2);
+		StyleConstants.setSpaceBelow(right, 2);
+		StyleConstants.setRightIndent(right, 8);
+		StyleConstants.setBold(right, true);
+		StyleConstants.setItalic(right, true);
+
+		textField = new JTextField() {
+
+			@Override
+			public void addNotify() {
+				super.addNotify();
+				requestFocus();
+			}
+		};
+		
+       
+
+        
+		textField.setFont(new Font("Open Sans", Font.PLAIN, 13));
+		textField.setBackground(new Color(255, 255, 224));
+
+		textField.addActionListener(this);
+		contentPane.add(textField, BorderLayout.SOUTH);
+		textField.setColumns(10);
+
+		scrollPane = new JScrollPane();
+		contentPane.add(scrollPane, BorderLayout.CENTER);
+		textPane.setBorder(new LineBorder(new Color(0, 0, 128), 1, true));
+		textPane.setEditable(false);
+		textPane.setFont(new Font("Open Sans", Font.PLAIN, 13));
+		textPane.setBackground(new Color(248, 248, 255));
+		DefaultCaret caret = (DefaultCaret) textPane.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
+		scrollPane.setViewportView(textPane);
+
+		btnNewButton = new JButton("Speak");
+		btnNewButton.setVisible(true);
+		btnNewButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+			
+				new Thread(new Runnable() {
+					@Override
+					public void run() {	
+						
+							isActive = true;
+		
+							toggle = true;
+							btnNewButton.setVisible(false);
+							btnNewButton1.setVisible(true);
+							btnNewButton1.invalidate();
+							btnNewButton.invalidate();
+							//scrollPane.setColumnHeaderView(btnNewButton);
+							scrollPane.setColumnHeaderView(btnNewButton1);
+						
+							scrollPane.invalidate();
+							
+							initiateVoiceCall();
+							
+					}
+				}).start();
+				
+			}
+		});
+		
+	
+		
+		
+		btnNewButton1 = new JButton("Sleep");
+	//	btnNewButton1.setVisible(false);
+		
+		btnNewButton1.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+			
+				new Thread(new Runnable() {
+					@Override
+					public void run() {	
+						
+							isActive = false;
+							toggle = false;
+							btnNewButton.setVisible(true);
+								btnNewButton1.setVisible(false);
+								btnNewButton.invalidate();
+								btnNewButton1.invalidate();
+								
+								scrollPane.setColumnHeaderView(btnNewButton);
+													
+					}
+				}).start();
+				
+			}
+		});
+		
+		scrollPane.setColumnHeaderView(btnNewButton);
+
+		addWindowFocusListener(this);
+	
+		int decider = (int) (Math.random() * 3 + 1);
+		if (decider == 1) {
+
+			try {
+				doc.insertString(doc.getLength(),
+						botName + "May I Help you \n", right);
+				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+			} catch (BadLocationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else if (decider == 2) {
+			try {
+				doc.insertString(doc.getLength(),
+						botName + "Can I Help you \n", right);
+				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+			} catch (BadLocationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else if (decider == 3) {
+			try {
+				doc.insertString(doc.getLength(), botName
+						+ "What can I do for you \n", right);
+				doc.setParagraphAttributes(doc.getLength(), 1, right, true);
+			} catch (BadLocationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+	//	loadConfig();
+
+	}
+	public void windowGainedFocus(WindowEvent e){
+	
+        if(e.getNewState() != e.WINDOW_GAINED_FOCUS){
+            toFront();
+            requestFocus();
+            requestFocusInWindow();
+           // System.out.println("focus gained");
+         //   System.out.println("Focus Gained from " + toggle);
+
+          //  	isActive = true;
+            	toggle = true;
+          
+        }
+		
+	}
+    public void windowLostFocus(WindowEvent e)
+    {
+        if(e.getNewState() != e.WINDOW_LOST_FOCUS){
+           // System.out.println("focus lost");
+
+           // System.out.println("Focus lost from " + toggle);
+
+          //  isActive = false;
+            toggle = false;
+        }	
+    }
+	public void initiateVoiceCall()
+	{	
+		
+		System.out.println("Initated call" + toggle);
+
+		while (true)
+		{
+			
+			System.out.println("Initated while true" + toggle);
+
+        //Configuration Object
+        Configuration configuration = new Configuration();
+ 
+        // Set path to the acoustic model.
+        configuration.setAcousticModelPath("resource:/edu/cmu/sphinx/models/en-us/en-us");
+        // Set path to the dictionary.
+        configuration.setDictionaryPath("/Users/Downloads/myProject/2008.dic");
+        // Set path to the language model.
+        configuration.setLanguageModelPath("/Users/Downloads/myProject/2008.lm");
+ 
+        //Recognizer object, Pass the Configuration object
+        LiveSpeechRecognizer recognize;
+		try {
+			recognize = new LiveSpeechRecognizer(configuration);
+	
+        //Start Recognition Process (The bool parameter clears the previous cache if true)
+    	//	System.out.println("----Before loop Toggle " + toggle);
+
+		
+	    	
+	    	
+	    	
+        recognize.startRecognition(true);
+ 
+        //Creating SpeechResult object
+		
+        SpeechResult result;
+
+    
+        //Check if recognizer recognized the speech
+        while ((result = recognize.getResult()) != null && toggle) {
+        	System.out.println("Inside while listening "+ toggle);
+        
+        	
+        	
+        	while (!toggle)
+        	{
+        		result = recognize.getResult();
+        		System.out.println("In ----" + toggle);
+        		try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        		
+        	}
+    	//	System.out.println("----resumed" + "Toggle " + toggle);
+        	//System.out.println("Before Resume Toggle is "+ toggle);
+
+        	//System.out.println("Result is " + result.toString());
+            //Get the recognized speech
+        	
+            String command = result.getHypothesis();
+            //Match recognized speech with our commands
+            
+        
+			String uText = command.toLowerCase();
+			response = command;
+
+			//String uText = textField.getText();
+			//response = uText;
+
+			try {
+				StyledDocument doc = textPane.getStyledDocument();
+
+				doc.insertString(doc.getLength(), user + uText + " \n",
+						left);
+				doc.setParagraphAttributes(doc.getLength(), 1, left, true);
+			} catch (BadLocationException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+		
+			// System.out.println(uText);
+			textField.setText("");
+		
+         //  System.out.println("Toggle is after" + toggle);
+           
+           System.out.println("You said" + command);
+
+        }
+       
+    
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	//	}
+		}
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
