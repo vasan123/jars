@@ -1,0 +1,155 @@
+from tkinter import *
+#from textblob import TextBlob
+from xml.dom import minidom
+import xml.etree.ElementTree as ET
+
+
+import random
+import logging
+import os
+
+
+from tkinter import scrolledtext
+from threading import Thread
+from time import sleep
+global fulfil_dict, global_dict, intented_server
+
+
+progress = is_reponse_recived = success = False
+
+utter_list = []
+slot_dict = fulfil_dict = global_dict = {}
+
+window = Tk()
+thread = ""
+window.title("How Can I Help U")
+ 
+window.geometry('700x575')
+ 
+textArea = scrolledtext.ScrolledText(window,width=70,height=25)
+textArea.grid(column=0,row=2)
+
+txtEntry = Entry(window,width=65)
+txtEntry.grid(column=0, row=45)
+
+#Set focus to Entry
+txtEntry.focus()
+
+GREETING_KEYWORDS = ("hello", "hi", "greetings", "sup", "what's up",)
+
+GREETING_RESPONSES = ["'sup bro", "hey", "*nods*", "hey you get my snap?"]
+
+NONE_RESPONSES = [
+    "uh whatever",
+    "meet me at the foosball table, bro?",
+    "code hard bro",
+    "want to bro down and crush code?",
+    "I'd like to add you to my professional network on LinkedIn",
+    "Have you closed your seed round, dog?",
+]
+
+def check_for_greeting(sentence):
+    """If any of the words in the user's input was a greeting, return a greeting response"""
+   # for word in sentence.words:
+   #     if word.lower() in GREETING_KEYWORDS:
+    return random.choice(GREETING_RESPONSES)
+			
+	
+def load_template(tag_name):
+	tree = ET.parse('template.xml')
+	root = tree.getroot()
+	for child in root.findall('bot'):
+		for level in child.findall("[@name='sop']"):
+		
+			for utter in level.iter('utterances'):
+				global utter_list
+				utter_list = utter.text
+				#print (utter_list)
+
+			for slot in level.iter('slots'):
+				global slot_dict
+				slot_dict[slot.get('name')] = slot.text			
+				#print (slot_dict)
+		
+
+def load_repository(app_name):
+	tree = ET.parse('repository.xml')
+	root = tree.getroot()
+	for child in root.findall('application'):
+		for level in child.findall("[@name='wba']"):
+			for node in level.getiterator():
+				if node.tag != 'application':
+					fulfil_dict[node.tag] = node.text
+				
+		global_dict['wba'] = fulfil_dict
+
+
+def validation_hook(key, validation):
+	global success, is_reponse_recived
+	validation_response = ""
+	success = False
+
+	if key == "application":
+		if is_reponse_recived == True:
+			success = True
+		else:	
+			success = False
+	else:
+		if key == "confirm":
+			success = True
+		else:
+			success = False
+			
+	return success
+	
+def bot_say(input_string):
+	global response
+	global progress
+	for key, value in slot_dict.items():
+		#input_received = scan_inputs(input_string, key);
+		
+		#if len(input_received) > 0:
+		textArea.insert(INSERT," Bot: " + value + " " + "\n", ("right",))
+		textArea.tag_configure("right", justify="right")
+		textArea.tag_configure('right', foreground="blue",font=('Arial', 10, 'bold', 'italic'))
+		txtEntry.delete(0,END)
+
+		while len(response) <= 0 or not validation_hook(key, response):
+			sleep(1) 
+	
+	progress = False	
+	process_fulfilement()
+		
+
+def clicked():
+		global response
+		global progress
+		global is_reponse_recived
+		input_string = response = txtEntry.get()
+
+		print (" Response from clicked" + response)
+		textArea.insert(INSERT," Vasan: " + input_string + " " + "\n", ("left",))
+		textArea.tag_configure("left", justify="left")
+		textArea.tag_configure('left', foreground="red",font=('Arial', 10, 'bold', 'italic'))
+		
+		#sentence = "hello"
+		#input="This is sample text"
+		#resp = check_for_greeting(input)
+		print ("Before Clicked")
+		print (is_reponse_recived)
+		is_reponse_recived = True
+		if input_string in('sop') and  not progress:
+			progress = True
+			#resp = ""
+			load_template('sop')
+			thread = Thread(target = bot_say, args = (input_string, ))
+			thread.start()
+			
+		txtEntry.delete(0,END)
+	
+#Event for Enter keys 
+txtEntry.bind("<Return>", lambda _: clicked())
+
+ 
+load_repository('wba') 
+window.mainloop()
